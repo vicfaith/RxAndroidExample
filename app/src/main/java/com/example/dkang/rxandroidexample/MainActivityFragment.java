@@ -9,8 +9,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.example.dkang.rxandroidexample.models.Current;
+
 import java.util.concurrent.TimeUnit;
 
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscriber;
@@ -204,6 +209,26 @@ public class MainActivityFragment extends Fragment {
                 Log.d(TAG, s);
             }
         });
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
+                .baseUrl("http://api.openweathermap.org/data/2.5/weather")
+                .build();
+
+        WeatherService weatherService = retrofit.create(WeatherService.class);
+        Observable<Current> london = weatherService.getCurrent("Islamabad");
+
+        london.subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Action1<Current>() {
+                    @Override
+                    public void call(Current current) {
+                        Log.e("Current Weather", current.getWeather()
+                                .get(0)
+                                .getDescription());
+                    }
+                });
     }
 
     @Override

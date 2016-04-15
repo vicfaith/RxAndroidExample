@@ -213,20 +213,18 @@ public class MainActivityFragment extends Fragment {
         Retrofit retrofit = new Retrofit.Builder()
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create())
-                .baseUrl("http://api.openweathermap.org/data/2.5/weather")
+                .baseUrl("http://api.openweathermap.org/data/2.5/")
                 .build();
 
         WeatherService weatherService = retrofit.create(WeatherService.class);
-        Observable<Current> london = weatherService.getCurrent("Islamabad");
+        Observable<Current> london = weatherService.getCurrent("London");
 
         london.subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Current>() {
                     @Override
                     public void call(Current current) {
-                        Log.e("Current Weather", current.getWeather()
-                                .get(0)
-                                .getDescription());
+                        Log.d("Current Weather", current.getWeather().get(0).getDescription());
                     }
                 });
     }

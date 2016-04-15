@@ -12,18 +12,21 @@ import android.view.ViewGroup;
 import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
+import rx.Observer;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.android.schedulers.HandlerScheduler;
 import rx.exceptions.OnErrorThrowable;
 import rx.functions.Action1;
 import rx.functions.Func0;
+import rx.functions.Func1;
+import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
 
 /**
- * A placeholder fragment containing a simple view.
+ * http://code.tutsplus.com/tutorials/getting-started-with-reactivex-on-android--cms-24387
  */
 public class MainActivityFragment extends Fragment {
     final static String TAG = MainActivity.class.getSimpleName();
@@ -99,6 +102,108 @@ public class MainActivityFragment extends Fragment {
                         Log.d(TAG, "onNext(" + string + ")");
                     }
                 });
+
+        // if you don't need onCompleted, just use Action
+        // main thread will emit "hello" so it will show first.
+        Observable.just("hello").subscribe(new Observer<String>() {
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onNext(String s) {
+                Log.d(TAG, s);
+            }
+        });
+
+        Observable.from(new Integer[]{1, 2, 3, 4, 5}).subscribe(new Action1<Integer>() {
+            @Override
+            public void call(Integer integer) {
+                Log.d(TAG, String.valueOf(integer));
+            }
+        });
+
+        // map & filter like JavaScript, Ruby or Kotlin
+        Observable.from(new Integer[]{1, 2, 3, 4, 5}).map(new Func1<Integer, Object>() {
+            @Override
+            public Object call(Integer integer) {
+                return integer * integer;
+            }
+        });
+
+        Observable<String> fetchFromGoogle = Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                try {
+                    String data = "http://www.google.com";
+                    subscriber.onNext(data); // Emit the contents of the URL
+                    subscriber.onCompleted(); // Nothing more to emit
+                } catch (Exception e) {
+                    subscriber.onError(e); // In case there are network errors
+                }
+            }
+        });
+        fetchFromGoogle
+                .subscribeOn(Schedulers.newThread()) // Create a new Thread
+                .observeOn(AndroidSchedulers.mainThread()) // Use the UI thread
+                .subscribe(new Subscriber<String>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.d(TAG, "onCompleted()");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e(TAG, "onError()", e);
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        Log.d(TAG, "onNext(" + s + ")");
+                    }
+                });
+
+        Observable<String> fetchFromYahoo = Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                try {
+                    String data = "http://www.yahoo.com";
+                    subscriber.onNext(data); // Emit the contents of the URL
+                    subscriber.onCompleted(); // Nothing more to emit
+                } catch (Exception e) {
+                    subscriber.onError(e); // In case there are network errors
+                }
+            }
+        });
+
+        Observable<String> zipped = Observable.zip(fetchFromGoogle, fetchFromYahoo, new Func2<String, String, String>() {
+            @Override
+            public String call(String google, String yahoo) {
+                // Do something with the results of both threads
+                return google + "\n" + yahoo;
+            }
+        });
+        zipped.subscribe(new Action1<String>() {
+            @Override
+            public void call(String s) {
+                Log.d(TAG, s);
+            }
+        });
+
+        Observable<String> concatenated = Observable.concat(fetchFromGoogle, fetchFromYahoo);
+        concatenated.subscribeOn(Schedulers.newThread());
+        concatenated.subscribe(new Action1<String>() {
+            @Override
+            public void call(String s) {
+                Log.d(TAG, s);
+            }
+        });
     }
 
     @Override
